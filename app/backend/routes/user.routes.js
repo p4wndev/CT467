@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const userController = require("../controllers/user.controller");
-const { verifyToken, requireRole } = require("../middleware/auth.middleware");
+const { verifyToken, requireRole } = require("../middlewares/authMiddleware");
 
 // Chỉ admin mới lấy danh sách người dùng
 router.get("/", verifyToken, requireRole("admin"), userController.getAllUsers);
