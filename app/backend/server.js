@@ -9,6 +9,10 @@ const veRoutes = require("./routes/ve.routes");
 const movieRoutes = require("./routes/movie.routes");
 const bapNuocRoutes = require("./routes/bapnuoc.routes");
 const phongChieuRoutes = require("./routes/phongchieu.routes");
+const chitietveRoutes = require("./routes/chitietve.routes")
+const hoadonRoutes = require("./routes/hoadon.routes")
+const chitiethoadonRoutes = require("./routes/chitiethoadon.routes")
+
 const app = express();
 app.use(express.json());
 
@@ -21,6 +25,9 @@ app.use("/ve", veRoutes);
 app.use("/movies", movieRoutes);
 app.use("/bapnuoc", bapNuocRoutes);
 app.use("/phongchieu", phongChieuRoutes);
+app.use("/chitietve", chitietveRoutes);
+app.use("/hoadon", hoadonRoutes);
+app.use("/chitiethoadon", chitiethoadonRoutes);
 
 // Xử lý lỗi 404 (Not Found)
 app.use((req, res, next) => {
