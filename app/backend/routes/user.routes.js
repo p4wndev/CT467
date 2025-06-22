@@ -19,5 +19,11 @@ router.delete(
   requireRole("admin"),
   userController.deleteUser
 );
-
+// Chỉ admin được nâng quyền
+router.patch(
+  "/:id/role",
+  verifyToken,
+  requireRole("admin"),
+  userController.upgradeUserToStaff
+);
 module.exports = router;
