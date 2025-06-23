@@ -4,7 +4,7 @@ const { verifyToken, requireRole } = require('../middlewares/authMiddleware');
 // Lấy tất cả chi tiết vé
 exports.getAllChiTietVe = [verifyToken, requireRole('admin'), async (req, res) => {
   try {
-    const [rows] = await pool.query(
+    const [rows] = await pool.promise().query(
       `SELECT ctv.*, v.MaVe, sc.MaSuatChieu, g.SoGhe, g.LoaiGhe
        FROM ChiTietVe ctv
        JOIN Ve v ON ctv.MaVe = v.MaVe
@@ -22,7 +22,7 @@ exports.getAllChiTietVe = [verifyToken, requireRole('admin'), async (req, res) =
 exports.getChiTietVeById = [verifyToken, async (req, res) => {
   const { MaChiTietVe } = req.params;
   try {
-    const [rows] = await pool.query(
+    const [rows] = await pool.promise().query(
       `SELECT ctv.*, v.MaVe, sc.MaSuatChieu, g.SoGhe, g.LoaiGhe
        FROM ChiTietVe ctv
        JOIN Ve v ON ctv.MaVe = v.MaVe
@@ -50,7 +50,7 @@ exports.createChiTietVe = [verifyToken, requireRole('admin'), async (req, res) =
   }
 
   try {
-    const [result] = await pool.query(
+    const [result] = await pool.promise().query(
       'INSERT INTO ChiTietVe (MaChiTietVe, MaVe, MaSuatChieu, MaGhe, TrangThai) VALUES (?, ?, ?, ?, ?)',
       [null, MaVe, MaSuatChieu, MaGhe, TrangThai]
     );
@@ -67,7 +67,7 @@ exports.updateChiTietVe = [verifyToken, requireRole('admin'), async (req, res) =
   const { MaVe, MaSuatChieu, MaGhe, TrangThai } = req.body;
 
   try {
-    const [result] = await pool.query(
+    const [result] = await pool.promise().query(
       'UPDATE ChiTietVe SET MaVe = ?, MaSuatChieu = ?, MaGhe = ?, TrangThai = ? WHERE MaChiTietVe = ?',
       [MaVe, MaSuatChieu, MaGhe, TrangThai, MaChiTietVe]
     );
@@ -85,7 +85,7 @@ exports.updateChiTietVe = [verifyToken, requireRole('admin'), async (req, res) =
 exports.deleteChiTietVe = [verifyToken, requireRole('admin'), async (req, res) => {
   const { MaChiTietVe } = req.params;
   try {
-    const [result] = await pool.query(
+    const [result] = await pool.promise().query(
       'DELETE FROM ChiTietVe WHERE MaChiTietVe = ?',
       [MaChiTietVe]
     );

@@ -131,7 +131,7 @@ exports.getUserTickets = [verifyToken, async (req, res) => {
     const MaNguoiDung = req.user.MaNguoiDung; // Lấy MaNguoiDung từ token
 
     try {
-        const [tickets] = await pool.query(
+        const [tickets] = await pool.promise().query(
             `SELECT v.*, COUNT(ctv.MaChiTietVe) AS SoLuongGhe, GROUP_CONCAT(g.SoGhe) AS CacSoGhe, GROUP_CONCAT(sc.ThoiGianChieu) AS ThoiGianChieu
              FROM Ve v
              LEFT JOIN ChiTietVe ctv ON v.MaVe = ctv.MaVe
@@ -158,14 +158,14 @@ exports.getTicketDetails = [verifyToken, async (req, res) => {
 
     try {
         // Lấy thông tin vé và đảm bảo nó thuộc về người dùng đang đăng nhập
-        const [veRows] = await pool.query('SELECT * FROM Ve WHERE MaVe = ? AND MaNguoiDung = ?', [MaVe, MaNguoiDung]);
+        const [veRows] = await pool.promise().query('SELECT * FROM Ve WHERE MaVe = ? AND MaNguoiDung = ?', [MaVe, MaNguoiDung]);
         if (veRows.length === 0) {
             return res.status(404).json({ message: 'Không tìm thấy vé hoặc bạn không có quyền truy cập vé này.' });
         }
         const ve = veRows[0];
 
         // Lấy chi tiết các ghế trong vé đó
-        const [chiTietVeRows] = await pool.query(
+        const [chiTietVeRows] = await pool.promise().query(
             `SELECT ctv.MaChiTietVe, ctv.MaSuatChieu, ctv.MaGhe, ctv.TrangThai AS TrangThaiChiTietVe,
                     sc.ThoiGianBatDau, sc.ThoiGianKetThuc, sc.MaPhim, sc.MaPhong,
                     g.SoGhe, g.LoaiGhe
@@ -391,12 +391,12 @@ exports.getAllTicketsAdmin = [verifyToken, requireRole('admin'), async (req, res
         queryParams.push(parsedLimit, offset);
 
         // Thực thi truy vấn đếm tổng số bản ghi
-        const [totalRowsResult] = await pool.query(countQuery, countQueryParams);
+        const [totalRowsResult] = await pool.promise().query(countQuery, countQueryParams);
         const totalTickets = totalRowsResult[0].total;
         const totalPages = Math.ceil(totalTickets / parsedLimit);
 
         // Thực thi truy vấn lấy dữ liệu chính
-        const [tickets] = await pool.query(baseQuery, queryParams);
+        const [tickets] = await pool.promise().query(baseQuery, queryParams);
 
         // Xử lý dữ liệu ChiTietVeFormatted để dễ sử dụng hơn
         const formattedTickets = tickets.map(ticket => {
@@ -444,7 +444,7 @@ exports.getTicketDetailsAdmin = [verifyToken, requireRole('admin'), async (req, 
     const { MaVe } = req.params;
 
     try {
-        const [veRows] = await pool.query(
+        const [veRows] = await pool.promise().query(
             `SELECT v.*, nd.TenNguoiDung, nd.Email
              FROM Ve v
              JOIN NguoiDung nd ON v.MaNguoiDung = nd.MaNguoiDung
@@ -457,7 +457,7 @@ exports.getTicketDetailsAdmin = [verifyToken, requireRole('admin'), async (req, 
         const ve = veRows[0];
 
         // Lấy chi tiết các ghế trong vé đó, bao gồm trạng thái của từng chi tiết
-        const [chiTietVeRows] = await pool.query(
+        const [chiTietVeRows] = await pool.promise().query(
             `SELECT ctv.MaChiTietVe, ctv.MaSuatChieu, ctv.MaGhe, ctv.TrangThai AS TrangThaiChiTietVe,
                     sc.ThoiGianBatDau, sc.ThoiGianKetThuc, sc.MaPhim, sc.MaPhong,
                     g.SoGhe, g.LoaiGhe

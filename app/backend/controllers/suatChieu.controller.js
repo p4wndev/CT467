@@ -212,12 +212,12 @@ exports.getAllSuatChieu = [verifyToken, requireRole('admin'), async (req, res) =
         queryParams.push(parsedLimit, offset);
 
         // Thực thi truy vấn đếm tổng số bản ghi
-        const [totalRowsResult] = await pool.query(countQuery, countQueryParams);
+        const [totalRowsResult] = await pool.promise().query(countQuery, countQueryParams);
         const totalSuatChieu = totalRowsResult[0].total;
         const totalPages = Math.ceil(totalSuatChieu / parsedLimit);
 
         // Thực thi truy vấn lấy dữ liệu chính
-        const [suatChieuList] = await pool.query(baseQuery, queryParams);
+        const [suatChieuList] = await pool.promise().query(baseQuery, queryParams);
 
         res.status(200).json({
             totalItems: totalSuatChieu,
@@ -240,7 +240,7 @@ exports.getSuatChieuById = async (req, res) => {
     const { MaSuatChieu } = req.params;
 
     try {
-        const [suatChieuRows] = await pool.query(
+        const [suatChieuRows] = await pool.promise().query(
             `SELECT sc.*, p.TenPhim, pc.TenPhong
              FROM SuatChieu sc
              JOIN Phim p ON sc.MaPhim = p.MaPhim

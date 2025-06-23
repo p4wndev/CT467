@@ -4,7 +4,7 @@ const { verifyToken, requireRole } = require("../middlewares/authMiddleware");
 // Lấy tất cả hóa đơn (chỉ admin)
 exports.getAllHoaDon = [verifyToken, requireRole("admin"), async (req, res) => {
   try {
-    const [rows] = await pool.query(
+    const [rows] = await pool.promise().query(
       `SELECT hd.*, nd.TenNguoiDung, v.TongTien AS TongTienVe
        FROM HoaDon hd
        JOIN NguoiDung nd ON hd.MaNguoiDung = nd.MaNguoiDung
@@ -23,7 +23,7 @@ exports.getHoaDonById = [verifyToken, async (req, res) => {
   const MaNguoiDung = req.user.MaNguoiDung;
 
   try {
-    const [rows] = await pool.query(
+    const [rows] = await pool.promise().query(
       `SELECT hd.*, nd.TenNguoiDung, v.TongTien AS TongTienVe
        FROM HoaDon hd
        JOIN NguoiDung nd ON hd.MaNguoiDung = nd.MaNguoiDung
@@ -37,7 +37,7 @@ exports.getHoaDonById = [verifyToken, async (req, res) => {
     const hoaDon = rows[0];
 
     // Tính tổng tiền chi tiết hóa đơn
-    const [chiTietRows] = await pool.query(
+    const [chiTietRows] = await pool.promise().query(
       `SELECT DonGia, SoLuong FROM ChiTietHoaDon WHERE MaHoaDon = ?`,
       [MaHoaDon]
     );
@@ -60,7 +60,7 @@ exports.createHoaDon = [verifyToken, requireRole("admin"), async (req, res) => {
   }
 
   try {
-    const [result] = await pool.query(
+    const [result] = await pool.promise().query(
       `INSERT INTO HoaDon (MaHoaDon, MaNguoiDung, MaVe, NgayMua, TongTien) 
        VALUES (?, ?, ?, ?, 0)`,
       [null, MaNguoiDung, MaVe, NgayMua]
@@ -78,7 +78,7 @@ exports.updateHoaDon = [verifyToken, requireRole("admin"), async (req, res) => {
   const { MaNguoiDung, MaVe, NgayMua } = req.body;
 
   try {
-    const [result] = await pool.query(
+    const [result] = await pool.promise().query(
       `UPDATE HoaDon SET MaNguoiDung = ?, MaVe = ?, NgayMua = ? 
        WHERE MaHoaDon = ?`,
       [MaNguoiDung, MaVe, NgayMua, MaHoaDon]
@@ -89,19 +89,19 @@ exports.updateHoaDon = [verifyToken, requireRole("admin"), async (req, res) => {
     }
 
     // Tính lại TongTien
-    const [chiTietRows] = await pool.query(
+    const [chiTietRows] = await pool.promise().query(
       `SELECT DonGia, SoLuong FROM ChiTietHoaDon WHERE MaHoaDon = ?`,
       [MaHoaDon]
     );
     const tongTienChiTiet = chiTietRows.reduce((sum, row) => sum + (row.DonGia * row.SoLuong), 0);
-    const [veRow] = await pool.query(
+    const [veRow] = await pool.promise().query(
       `SELECT TongTien AS TongTienVe FROM Ve WHERE MaVe = (SELECT MaVe FROM HoaDon WHERE MaHoaDon = ?)`,
       [MaHoaDon]
     );
     const tongTienVe = veRow[0]?.TongTienVe || 0;
     const tongTien = tongTienChiTiet + tongTienVe;
 
-    await pool.query(
+    await pool.promise().query(
       `UPDATE HoaDon SET TongTien = ? WHERE MaHoaDon = ?`,
       [tongTien, MaHoaDon]
     );
@@ -118,7 +118,7 @@ exports.deleteHoaDon = [verifyToken, requireRole("admin"), async (req, res) => {
   const { MaHoaDon } = req.params;
 
   try {
-    const [result] = await pool.query(
+    const [result] = await pool.promise().query(
       `DELETE FROM HoaDon WHERE MaHoaDon = ?`,
       [MaHoaDon]
     );

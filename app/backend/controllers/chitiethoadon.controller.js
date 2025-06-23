@@ -4,7 +4,7 @@ const { verifyToken, requireRole } = require('../middlewares/authMiddleware');
 // Lấy tất cả chi tiết hóa đơn
 exports.getAllChiTietHoaDon = [verifyToken, requireRole('admin'), async (req, res) => {
   try {
-    const [rows] = await pool.query(
+    const [rows] = await pool.promise().query(
       `SELECT cthd.*, hd.MaHoaDon, bn.TenCombo
        FROM ChiTietHoaDon cthd
        JOIN HoaDon hd ON cthd.MaHoaDon = hd.MaHoaDon
@@ -21,7 +21,7 @@ exports.getAllChiTietHoaDon = [verifyToken, requireRole('admin'), async (req, re
 exports.getChiTietHoaDonById = [verifyToken, async (req, res) => {
   const { MaChiTietHoaDon } = req.params;
   try {
-    const [rows] = await pool.query(
+    const [rows] = await pool.promise().query(
       `SELECT cthd.*, hd.MaHoaDon, bn.TenCombo
        FROM ChiTietHoaDon cthd
        JOIN HoaDon hd ON cthd.MaHoaDon = hd.MaHoaDon
@@ -48,7 +48,7 @@ exports.createChiTietHoaDon = [verifyToken, requireRole('admin'), async (req, re
   }
 
   try {
-    const [result] = await pool.query(
+    const [result] = await pool.promise().query(
       'INSERT INTO ChiTietHoaDon (MaChiTietHoaDon, MaHoaDon, MaCombo, SoLuong, DonGia) VALUES (?, ?, ?, ?, ?)',
       [null, MaHoaDon, MaCombo, SoLuong, DonGia]
     );
@@ -65,7 +65,7 @@ exports.updateChiTietHoaDon = [verifyToken, requireRole('admin'), async (req, re
   const { MaHoaDon, MaCombo, SoLuong, DonGia } = req.body;
 
   try {
-    const [result] = await pool.query(
+    const [result] = await pool.promise().query(
       'UPDATE ChiTietHoaDon SET MaHoaDon = ?, MaCombo = ?, SoLuong = ?, DonGia = ? WHERE MaChiTietHoaDon = ?',
       [MaHoaDon, MaCombo, SoLuong, DonGia, MaChiTietHoaDon]
     );
@@ -83,7 +83,7 @@ exports.updateChiTietHoaDon = [verifyToken, requireRole('admin'), async (req, re
 exports.deleteChiTietHoaDon = [verifyToken, requireRole('admin'), async (req, res) => {
   const { MaChiTietHoaDon } = req.params;
   try {
-    const [result] = await pool.query(
+    const [result] = await pool.promise().query(
       'DELETE FROM ChiTietHoaDon WHERE MaChiTietHoaDon = ?',
       [MaChiTietHoaDon]
     );
