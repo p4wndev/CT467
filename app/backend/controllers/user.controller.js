@@ -55,3 +55,21 @@ exports.deleteUser = (req, res) => {
     }
   );
 };
+
+// PATCH /users/:id/role
+exports.upgradeUserToStaff = (req, res) => {
+  const { id } = req.params;
+
+  // Có thể kiểm tra thêm điều kiện nếu cần: chỉ nâng từ 'user' -> 'staff'
+  pool.query(
+    "UPDATE NguoiDung SET VaiTro = 'staff' WHERE MaNguoiDung = ?",
+    [id],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: "Lỗi cập nhật vai trò" });
+      if (result.affectedRows === 0)
+        return res.status(404).json({ error: "Không tìm thấy người dùng" });
+
+      res.json({ message: "Đã nâng quyền người dùng lên staff" });
+    }
+  );
+};
