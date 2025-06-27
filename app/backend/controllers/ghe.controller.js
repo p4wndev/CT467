@@ -4,7 +4,7 @@ const { verifyToken, requireRole } = require('../middlewares/authMiddleware'); /
 // --- GET: Lấy tất cả ghế ---
 exports.getAllGhe = async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM Ghe');
+        const [rows] = await pool.promise().query('SELECT * FROM Ghe');
         res.status(200).json(rows);
     } catch (error) {
         console.error('Lỗi khi lấy danh sách ghế:', error);
@@ -16,7 +16,7 @@ exports.getAllGhe = async (req, res) => {
 exports.getGheById = async (req, res) => {
     const { MaGhe } = req.params;
     try {
-        const [rows] = await pool.query('SELECT * FROM Ghe WHERE MaGhe = ?', [MaGhe]);
+        const [rows] = await pool.promise().query('SELECT * FROM Ghe WHERE MaGhe = ?', [MaGhe]);
         if (rows.length === 0) {
             return res.status(404).json({ message: 'Không tìm thấy ghế với mã này.' });
         }
@@ -36,17 +36,17 @@ exports.createGhe = [verifyToken, requireRole('admin'), async (req, res) => {
     }
 
     try {
-        const [existingGhe] = await pool.query('SELECT MaGhe FROM Ghe WHERE MaGhe = ?', [MaGhe]);
+        const [existingGhe] = await pool.promise().query('SELECT MaGhe FROM Ghe WHERE MaGhe = ?', [MaGhe]);
         if (existingGhe.length > 0) {
             return res.status(409).json({ message: 'Mã ghế đã tồn tại. Vui lòng chọn mã khác.' });
         }
 
-        const [existingPhong] = await pool.query('SELECT MaPhong FROM PhongChieu WHERE MaPhong = ?', [MaPhong]);
+        const [existingPhong] = await pool.promise().query('SELECT MaPhong FROM PhongChieu WHERE MaPhong = ?', [MaPhong]);
         if (existingPhong.length === 0) {
             return res.status(404).json({ message: 'Mã phòng không tồn tại. Vui lòng kiểm tra lại MaPhong.' });
         }
 
-        const [result] = await pool.query(
+        const [result] = await pool.promise().query(
             'INSERT INTO Ghe (MaGhe, MaPhong, SoGhe, LoaiGhe) VALUES (?, ?, ?, ?)',
             [MaGhe, MaPhong, SoGhe, LoaiGhe]
         );
@@ -72,7 +72,7 @@ exports.updateGhe = [verifyToken, requireRole('admin'), async (req, res) => {
         const updateFields = [];
 
         if (MaPhong) {
-            const [existingPhong] = await pool.query('SELECT MaPhong FROM PhongChieu WHERE MaPhong = ?', [MaPhong]);
+            const [existingPhong] = await pool.promise().query('SELECT MaPhong FROM PhongChieu WHERE MaPhong = ?', [MaPhong]);
             if (existingPhong.length === 0) {
                 return res.status(404).json({ message: 'Mã phòng không tồn tại. Vui lòng kiểm tra lại MaPhong.' });
             }
@@ -91,7 +91,7 @@ exports.updateGhe = [verifyToken, requireRole('admin'), async (req, res) => {
         updateQuery += updateFields.join(', ') + ' WHERE MaGhe = ?';
         updateValues.push(MaGhe);
 
-        const [result] = await pool.query(updateQuery, updateValues);
+        const [result] = await pool.promise().query(updateQuery, updateValues);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Không tìm thấy ghế với mã này để cập nhật.' });
@@ -107,7 +107,7 @@ exports.updateGhe = [verifyToken, requireRole('admin'), async (req, res) => {
 exports.deleteGhe = [verifyToken, requireRole('admin'), async (req, res) => {
     const { MaGhe } = req.params;
     try {
-        const [result] = await pool.query('DELETE FROM Ghe WHERE MaGhe = ?', [MaGhe]);
+        const [result] = await pool.promise().query('DELETE FROM Ghe WHERE MaGhe = ?', [MaGhe]);
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Không tìm thấy ghế với mã này để xóa.' });
         }
