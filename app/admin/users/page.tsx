@@ -1,41 +1,41 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useApiClient } from "@/lib/api-client"
-import { useToast } from "@/components/ui/use-toast"
+import type React from "react"
+
+import { useEffect, useState } from "react"
+import { api } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Plus, MoreHorizontal, Pencil, Trash } from "lucide-react"
-import { UserForm } from "@/components/admin/user-form"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useToast } from "@/hooks/use-toast"
+import { SidebarTrigger } from "@/components/ui/sidebar"
+import { Edit, Trash2, Search, UserCheck } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 
 interface User {
   MaNguoiDung: string
   TenNguoiDung: string
   Email: string
   SoDienThoai: string
-  VaiTro: string
+  VaiTro: "user" | "staff" | "admin"
 }
 
-export default function UsersPage() {
+export default function UsersManagement() {
   const [users, setUsers] = useState<User[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [isEditing, setIsEditing] = useState(false)
-
-  const api = useApiClient()
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [formData, setFormData] = useState({
+    TenNguoiDung: "",
+    Email: "",
+    SoDienThoai: "",
+    VaiTro: "user" as "user" | "staff" | "admin",
+  })
   const { toast } = useToast()
 
   useEffect(() => {
@@ -43,265 +43,279 @@ export default function UsersPage() {
   }, [])
 
   const fetchUsers = async () => {
-    setIsLoading(true)
     try {
-      // In a real app, you would fetch from your API
-      // const data = await api.get("/users");
-
-      // For demo purposes, we'll use mock data
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      const mockUsers: User[] = [
-        {
-          MaNguoiDung: "user1",
-          TenNguoiDung: "John Doe",
-          Email: "john@example.com",
-          SoDienThoai: "0123456789",
-          VaiTro: "user",
-        },
-        {
-          MaNguoiDung: "user2",
-          TenNguoiDung: "Jane Smith",
-          Email: "jane@example.com",
-          SoDienThoai: "0987654321",
-          VaiTro: "user",
-        },
-        {
-          MaNguoiDung: "admin1",
-          TenNguoiDung: "Admin User",
-          Email: "admin@example.com",
-          SoDienThoai: "0123123123",
-          VaiTro: "admin",
-        },
-      ]
-
-      setUsers(mockUsers)
-    } catch (error) {
+      setLoading(true)
+      const data = await api.getUsers()
+      setUsers(data)
+    } catch (error: any) {
       toast({
+        title: "Lỗi",
+        description: error.message || "Không thể tải danh sách người dùng",
         variant: "destructive",
-        title: "Error",
-        description: "Failed to load users",
       })
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
-  const handleAddUser = () => {
-    setCurrentUser(null)
-    setIsEditing(false)
-    setIsDialogOpen(true)
-  }
-
-  const handleEditUser = (user: User) => {
-    setCurrentUser(user)
-    setIsEditing(true)
-    setIsDialogOpen(true)
-  }
-
-  const handleDeleteClick = (user: User) => {
-    setCurrentUser(user)
-    setIsDeleteDialogOpen(true)
-  }
-
-  const handleDeleteConfirm = async () => {
-    if (!currentUser) return
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingUser) return
 
     try {
-      // In a real app, you would call your API
-      // await api.delete(`/users/${currentUser.MaNguoiDung}`);
-
-      // For demo purposes, we'll just update the state
-      setUsers(users.filter((user) => user.MaNguoiDung !== currentUser.MaNguoiDung))
-
+      await api.updateUser(editingUser.MaNguoiDung, formData)
       toast({
-        title: "User Deleted",
-        description: `${currentUser.TenNguoiDung} has been deleted successfully.`,
+        title: "Thành công",
+        description: "Cập nhật người dùng thành công",
       })
-    } catch (error) {
+      setIsEditDialogOpen(false)
+      fetchUsers()
+      resetForm()
+    } catch (error: any) {
       toast({
+        title: "Lỗi",
+        description: error.message || "Có lỗi xảy ra",
         variant: "destructive",
-        title: "Error",
-        description: "Failed to delete user",
       })
-    } finally {
-      setIsDeleteDialogOpen(false)
-      setCurrentUser(null)
     }
   }
 
-  const handleFormSubmit = async (userData: User) => {
+  const handleDelete = async (userId: string) => {
+    if (!confirm("Bạn có chắc chắn muốn xóa người dùng này?")) return
+
     try {
-      if (isEditing) {
-        // In a real app, you would call your API
-        // await api.put(`/users/${userData.MaNguoiDung}`, userData);
-
-        // For demo purposes, we'll just update the state
-        setUsers(users.map((user) => (user.MaNguoiDung === userData.MaNguoiDung ? userData : user)))
-
-        toast({
-          title: "User Updated",
-          description: `${userData.TenNguoiDung} has been updated successfully.`,
-        })
-      } else {
-        // In a real app, you would call your API
-        // await api.post("/users", userData);
-
-        // For demo purposes, we'll just update the state
-        setUsers([...users, userData])
-
-        toast({
-          title: "User Created",
-          description: `${userData.TenNguoiDung} has been created successfully.`,
-        })
-      }
-
-      setIsDialogOpen(false)
-    } catch (error) {
+      await api.deleteUser(userId)
       toast({
+        title: "Thành công",
+        description: "Xóa người dùng thành công",
+      })
+      fetchUsers()
+    } catch (error: any) {
+      toast({
+        title: "Lỗi",
+        description: error.message || "Không thể xóa người dùng",
         variant: "destructive",
-        title: "Error",
-        description: isEditing ? "Failed to update user" : "Failed to create user",
       })
     }
+  }
+
+  const handleUpgradeToStaff = async (userId: string) => {
+    if (!confirm("Bạn có chắc chắn muốn nâng quyền người dùng này lên staff?")) return
+
+    try {
+      await api.upgradeUserToStaff(userId)
+      toast({
+        title: "Thành công",
+        description: "Nâng quyền thành công",
+      })
+      fetchUsers()
+    } catch (error: any) {
+      toast({
+        title: "Lỗi",
+        description: error.message || "Không thể nâng quyền",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleEdit = (user: User) => {
+    setEditingUser(user)
+    setFormData({
+      TenNguoiDung: user.TenNguoiDung,
+      Email: user.Email || "",
+      SoDienThoai: user.SoDienThoai || "",
+      VaiTro: user.VaiTro,
+    })
+    setIsEditDialogOpen(true)
+  }
+
+  const resetForm = () => {
+    setFormData({
+      TenNguoiDung: "",
+      Email: "",
+      SoDienThoai: "",
+      VaiTro: "user",
+    })
+    setEditingUser(null)
   }
 
   const filteredUsers = users.filter(
     (user) =>
-      user.MaNguoiDung.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.TenNguoiDung.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.Email.toLowerCase().includes(searchTerm.toLowerCase()),
+      user.MaNguoiDung.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.Email?.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
+  const getRoleBadgeVariant = (role: string) => {
+    switch (role) {
+      case "admin":
+        return "destructive"
+      case "staff":
+        return "default"
+      default:
+        return "secondary"
+    }
+  }
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case "admin":
+        return "Quản trị viên"
+      case "staff":
+        return "Nhân viên"
+      default:
+        return "Người dùng"
+    }
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Users</h1>
-          <p className="text-muted-foreground">Manage user accounts in the system</p>
+        <div className="flex items-center space-x-2">
+          <SidebarTrigger />
+          <h2 className="text-3xl font-bold tracking-tight">Quản lý người dùng</h2>
         </div>
-        <Button onClick={handleAddUser}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add User
-        </Button>
       </div>
 
-      <div className="flex items-center gap-4">
-        <Input
-          placeholder="Search users..."
-          className="max-w-sm"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Username</TableHead>
-              <TableHead>Full Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead className="w-[100px]">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center">
-                  Loading users...
-                </TableCell>
-              </TableRow>
-            ) : filteredUsers.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center">
-                  No users found
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredUsers.map((user) => (
-                <TableRow key={user.MaNguoiDung}>
-                  <TableCell>{user.MaNguoiDung}</TableCell>
-                  <TableCell>{user.TenNguoiDung}</TableCell>
-                  <TableCell>{user.Email}</TableCell>
-                  <TableCell>{user.SoDienThoai}</TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        user.VaiTro === "admin"
-                          ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-                          : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-                      }`}
-                    >
-                      {user.VaiTro}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Actions</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEditUser(user)}>
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDeleteClick(user)}
-                          className="text-red-600 dark:text-red-400"
-                        >
-                          <Trash className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+      <Card>
+        <CardHeader>
+          <CardTitle>Danh sách người dùng</CardTitle>
+          <CardDescription>Quản lý thông tin và quyền hạn người dùng trong hệ thống</CardDescription>
+          <div className="flex items-center space-x-2">
+            <Search className="h-4 w-4" />
+            <Input
+              placeholder="Tìm kiếm người dùng..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-sm"
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">Đang tải...</div>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Mã người dùng</TableHead>
+                  <TableHead>Tên người dùng</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Số điện thoại</TableHead>
+                  <TableHead>Vai trò</TableHead>
+                  <TableHead>Thao tác</TableHead>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.map((user) => (
+                  <TableRow key={user.MaNguoiDung}>
+                    <TableCell className="font-medium">{user.MaNguoiDung}</TableCell>
+                    <TableCell>{user.TenNguoiDung}</TableCell>
+                    <TableCell>{user.Email || "Chưa có"}</TableCell>
+                    <TableCell>{user.SoDienThoai || "Chưa có"}</TableCell>
+                    <TableCell>
+                      <Badge variant={getRoleBadgeVariant(user.VaiTro)}>{getRoleLabel(user.VaiTro)}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => handleEdit(user)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        {user.VaiTro === "user" && (
+                          <Button variant="outline" size="sm" onClick={() => handleUpgradeToStaff(user.MaNguoiDung)}>
+                            <UserCheck className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {user.VaiTro !== "admin" && (
+                          <Button variant="outline" size="sm" onClick={() => handleDelete(user.MaNguoiDung)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
 
-      {/* User Form Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{isEditing ? "Edit User" : "Add New User"}</DialogTitle>
-            <DialogDescription>
-              {isEditing ? "Update the user's information below." : "Fill in the details to create a new user."}
-            </DialogDescription>
-          </DialogHeader>
-          <UserForm
-            user={currentUser}
-            isEditing={isEditing}
-            onSubmit={handleFormSubmit}
-            onCancel={() => setIsDialogOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
+          {!loading && filteredUsers.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              {searchTerm ? "Không tìm thấy người dùng nào phù hợp" : "Chưa có người dùng nào"}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete {currentUser?.TenNguoiDung}? This action cannot be undone.
-            </DialogDescription>
+            <DialogTitle>Chỉnh sửa người dùng</DialogTitle>
+            <DialogDescription>Cập nhật thông tin người dùng</DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDeleteConfirm}>
-              Delete
-            </Button>
-          </DialogFooter>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="TenNguoiDung">Tên người dùng</Label>
+              <Input
+                id="TenNguoiDung"
+                value={formData.TenNguoiDung}
+                onChange={(e) => setFormData({ ...formData, TenNguoiDung: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="Email">Email</Label>
+              <Input
+                id="Email"
+                type="email"
+                value={formData.Email}
+                onChange={(e) => setFormData({ ...formData, Email: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="SoDienThoai">Số điện thoại</Label>
+              <Input
+                id="SoDienThoai"
+                value={formData.SoDienThoai}
+                onChange={(e) => setFormData({ ...formData, SoDienThoai: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="VaiTro">Vai trò</Label>
+              <Select
+                value={formData.VaiTro}
+                onValueChange={(value: any) => setFormData({ ...formData, VaiTro: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">Người dùng</SelectItem>
+                  <SelectItem value="staff">Nhân viên</SelectItem>
+                  <SelectItem value="admin">Quản trị viên</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex justify-end space-x-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  resetForm()
+                  setIsEditDialogOpen(false)
+                }}
+              >
+                Hủy
+              </Button>
+              <Button type="submit">Cập nhật</Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

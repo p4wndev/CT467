@@ -10,7 +10,7 @@ router.get('/', gheController.getAllGhe);
 router.get('/:MaGhe', gheController.getGheById);
 
 // Tạo ghế mới 
-router.post('/', verifyToken, requireRole("admin"),gheController.createGhe);
+router.post('/', verifyToken, requireRole("staff","admin"),gheController.createGhe);
 
 // Cập nhật thông tin ghế 
 router.put('/:MaGhe', verifyToken, requireRole("admin"),gheController.updateGhe);

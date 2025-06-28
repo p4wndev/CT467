@@ -2,66 +2,59 @@
 
 import type React from "react"
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
-import { DashboardNav } from "@/components/admin/dashboard-nav"
-import { ModeToggle } from "@/components/mode-toggle"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
+import { AdminSidebar } from "@/components/admin/admin-sidebar"
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { isAuthenticated, isAdmin } = useAuth()
+  const { user, loading, token, isTokenValid } = useAuth()
   const router = useRouter()
 
-  // useEffect(() => {
-  //   if (!isAuthenticated) {
-  //     router.push("/auth/login")
-  //   } else if (!isAdmin) {
-  //     router.push("/not-found")
-  //   }
-  // }, [isAuthenticated, isAdmin, router])
+  useEffect(() => {
+    if (!loading) {
+      // Kiểm tra user và token
+      if (!user || !token || !isTokenValid()) {
+        console.log("Không có quyền truy cập admin, chuyển hướng đến login")
+        router.push("/login")
+        return
+      }
 
-  // if (!isAuthenticated || !isAdmin) {
-  //   return <div className="flex h-screen items-center justify-center">Loading...</div>
-  // }
+      // Kiểm tra role
+      if (user.VaiTro !== "admin" && user.VaiTro !== "staff") {
+        console.log("Không có quyền admin/staff, chuyển hướng đến trang chủ")
+        router.push("/")
+        return
+      }
+    }
+  }, [user, loading, token, router, isTokenValid])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Đang tải...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user || !token || !isTokenValid() || (user.VaiTro !== "admin" && user.VaiTro !== "staff")) {
+    return null
+  }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
-      <header className="sticky top-0 z-10 border-b bg-white dark:border-gray-800 dark:bg-gray-950">
-        <div className="container flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-6 w-6 text-primary"
-            >
-              <path d="m2 2 20 20" />
-              <path d="M12 12v8" />
-              <path d="M12 12h8" />
-              <path d="M12 12V4" />
-              <path d="M12 12H4" />
-            </svg>
-            <span className="text-xl font-bold">Admin Dashboard</span>
-          </div>
-          <ModeToggle />
-        </div>
-      </header>
-      <div className="container flex-1 items-start px-4 py-6 md:grid md:grid-cols-[220px_1fr] md:gap-6 lg:grid-cols-[240px_1fr] lg:gap-10">
-        <aside className="fixed top-[4.5rem] z-30 -ml-2 hidden h-[calc(100vh-4.5rem)] w-full shrink-0 overflow-y-auto border-r md:sticky md:block">
-          <DashboardNav />
-        </aside>
-        <main className="w-full">{children}</main>
-      </div>
-    </div>
+    <SidebarProvider>
+      <AdminSidebar />
+      <SidebarInset>
+        <main className="flex-1 overflow-auto">{children}</main>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
